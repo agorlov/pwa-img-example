@@ -1,3 +1,8 @@
+/**
+ * @file service-worker.js
+ * @description Service Worker для PWA. Отвечает за кэширование оболочки приложения (app shell),
+ * перехват сетевых запросов (для работы офлайн) и обработку фоновой синхронизации (background sync).
+ */
 // service-worker.js
 
 // Импортируем скрипт для работы с IndexedDB
@@ -17,7 +22,10 @@ const FILES_TO_CACHE = [
     // Если у вас есть иконка, добавьте ее сюда, например: '/assets/icon.png'
 ];
 
-// --- Событие INSTALL: кэширование оболочки приложения ---
+/**
+ * Событие 'install'.
+ * Срабатывает при установке Service Worker. Кэширует основные файлы приложения (app shell).
+ */
 self.addEventListener('install', (event) => {
     console.log('Service Worker: Installing...');
     event.waitUntil(
@@ -28,7 +36,10 @@ self.addEventListener('install', (event) => {
     );
 });
 
-// --- Событие ACTIVATE: очистка старых кэшей ---
+/**
+ * Событие 'activate'.
+ * Срабатывает при активации Service Worker. Удаляет старые кэши, чтобы избежать конфликтов.
+ */
 self.addEventListener('activate', (event) => {
     console.log('Service Worker: Activated');
     event.waitUntil(
@@ -44,9 +55,14 @@ self.addEventListener('activate', (event) => {
     return self.clients.claim();
 });
 
-// --- Событие FETCH: отдача ресурсов из кэша или сети ---
+/**
+ * Событие 'fetch'.
+ * Перехватывает все сетевые запросы от клиента.
+ * Отвечает из кэша, если ресурс там найден, иначе выполняет сетевой запрос.
+ * Игнорирует запросы к API, чтобы всегда получать свежие данные.
+ */
 self.addEventListener('fetch', (event) => {
-    // Мы не кэшируем запросы к API, только статические ассеты
+    // Мы не ��эшируем запросы к API, только статические ассеты
     if (event.request.url.includes('/api/')) {
         return;
     }
@@ -64,7 +80,11 @@ self.addEventListener('fetch', (event) => {
 });
 
 
-// --- Событие SYNC: фоновая отправка данных (остается без изменений) ---
+/**
+ * Событие 'sync'.
+ * Срабатывает, когда браузер восстанавливает соединение с сетью
+ * и есть зарегистрированный тег для синхронизации.
+ */
 self.addEventListener('sync', (event) => {
     if (event.tag === SYNC_TAG) {
         console.log('Service Worker: Sync event triggered for', SYNC_TAG);
@@ -72,6 +92,10 @@ self.addEventListener('sync', (event) => {
     }
 });
 
+/**
+ * Отправляет все запросы из очереди IndexedDB на сервер.
+ * После успешной отправки удаляет запрос из очереди и уведомляет клиентский UI.
+ */
 async function sendQueuedRequests() {
     try {
         const requests = await getRequests();

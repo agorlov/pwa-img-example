@@ -1,3 +1,8 @@
+/**
+ * @file js/app.js
+ * @description Главный скрипт приложения. Управляет UI, взаимодействием с пользователем,
+ * регистрацией Service Worker и обработкой статуса сети.
+ */
 // js/app.js
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -32,7 +37,7 @@ document.addEventListener('DOMContentLoaded', () => {
         uploadStatus.textContent = 'Фоновая синхронизация не поддерживается в вашем браузере.';
     }
 
-    // --- Об��аботка отправки формы ---
+    // --- Обработка отправки формы ---
     uploadForm.addEventListener('submit', async (event) => {
         event.preventDefault();
         const file = fileInput.files[0];
@@ -41,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Пытаемся отправить напрямую, если есть сеть
+        // Пытаемся отправить напрямую, если есть сет��
         if (navigator.onLine) {
             try {
                 await sendFileDirectly(file);
@@ -60,7 +65,12 @@ document.addEventListener('DOMContentLoaded', () => {
         uploadForm.reset();
     });
 
-    // --- Функции отправки и постановки в очередь ---
+    /**
+     * Отправляет файл напрямую на сервер.
+     * @param {File} file - Файл для отправки.
+     * @returns {Promise<object>} - Promise, который разрешается с JSON-ответом сервера.
+     * @throws {Error} - Если ответ сервера не 'ok'.
+     */
     function sendFileDirectly(file) {
         const formData = new FormData();
         formData.append('file', file, file.name);
@@ -75,6 +85,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    /**
+     * Сохраняет файл в IndexedDB для последующей фоновой отправки
+     * и регистрирует задачу синхронизации.
+     * @param {File} file - Файл для постановки в очередь.
+     */
     async function queueForSync(file) {
         const request = {
             file: file,
@@ -87,13 +102,19 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Request queued for sync.');
     }
 
-    // --- Обновление UI и статуса сети ---
+    /**
+     * Обновляет индикатор статуса сети (Онлайн/Офлайн).
+     */
     function updateOnlineStatus() {
         const isOnline = navigator.onLine;
         statusIndicator.textContent = isOnline ? 'Онлайн' : 'Офлайн';
         statusIndicator.className = isOnline ? 'online' : 'offline';
     }
 
+    /**
+     * Получает список файлов из IndexedDB и отображает их в UI.
+     * Для изображений создаются превью.
+     */
     async function renderQueuedFiles() {
         try {
             const requests = await getRequests();
@@ -129,6 +150,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    /**
+     * Запрашивает и отображает список файлов, уже загруженных на сервер.
+     */
     async function fetchServerFiles() {
         try {
             const response = await fetch('/api/list.php');
@@ -145,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     serverFileList.appendChild(li);
                 });
             }
-        } catch (error) {
+        } catch (error).
             console.error('Could not fetch file list:', error);
             serverFileList.innerHTML = '<li>Не удалось загрузить список файлов.</li>';
         }

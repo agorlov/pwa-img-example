@@ -1,3 +1,8 @@
+/**
+ * @file js/db.js
+ * @description Модуль для работы с IndexedDB. Предоставляет простой интерфейс
+ * для открытия БД и выполнения CRUD-операций с очередью запросов на отправку.
+ */
 // js/db.js
 
 const DB_NAME = 'pwa-upload-db';
@@ -6,6 +11,11 @@ const DB_VERSION = 1;
 
 let db;
 
+/**
+ * Открывает (или создает) и возвращает экземпляр IndexedDB.
+ * Реализует паттерн Singleton для предотвращения многократного открытия.
+ * @returns {Promise<IDBDatabase>} Promise, который разрешается с экземпляром БД.
+ */
 function openDB() {
     return new Promise((resolve, reject) => {
         if (db) {
@@ -33,6 +43,11 @@ function openDB() {
     });
 }
 
+/**
+ * Сохраняет объект с данными запроса в хранилище.
+ * @param {object} data - Данные для сохранения (например, { file: File, filename: 'name.jpg' }).
+ * @returns {Promise<number>} Promise, который разрешается с ID сохраненной записи.
+ */
 async function saveRequest(data) {
     const db = await openDB();
     return new Promise((resolve, reject) => {
@@ -48,6 +63,10 @@ async function saveRequest(data) {
     });
 }
 
+/**
+ * Получает все записи из хранилища.
+ * @returns {Promise<Array<object>>} Promise, который разрешается с массивом всех запросов.
+ */
 async function getRequests() {
     const db = await openDB();
     return new Promise((resolve, reject) => {
@@ -63,6 +82,11 @@ async function getRequests() {
     });
 }
 
+/**
+ * Удаляет запись из хранилища по ее ID.
+ * @param {number} id - ID записи для удаления.
+ * @returns {Promise<void>} Promise, который разрешается после успешного удаления.
+ */
 async function deleteRequest(id) {
     const db = await openDB();
     return new Promise((resolve, reject) => {
