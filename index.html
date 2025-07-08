@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWA Offline Upload</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.webmanifest">
+    <meta name="theme-color" content="#4A90E2">
+</head>
+<body>
+    <header>
+        <h1>PWA Offline Upload Demo</h1>
+        <p>Статус сети: <span id="status-indicator" class="offline">Офлайн</span></p>
+    </header>
+
+    <main>
+        <section class="upload-section">
+            <h2>Загрузить новый файл</h2>
+            <form id="upload-form">
+                <input type="file" id="file-input" required>
+                <button type="submit">Отправить</button>
+            </form>
+            <p id="upload-status"></p>
+        </section>
+
+        <section class="queued-files">
+            <h2>В очереди на отправку</h2>
+            <ul id="queued-file-list">
+                <!-- Список файлов в очереди будет здесь -->
+            </ul>
+        </section>
+
+        <section class="server-files">
+            <h2>Файлы на сервере</h2>
+            <ul id="server-file-list">
+                <!-- Список будет загружен динамически -->
+            </ul>
+            <button id="refresh-list">Обновить список</button>
+        </section>
+    </main>
+
+    <script src="js/db.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

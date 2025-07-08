@@ -1,0 +1,16 @@
+{
+    "name": "PWA Offline Upload Demo",
+    "short_name": "PWA Upload",
+    "start_url": "/index.html",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#4A90E2",
+    "description": "A demo app for offline file uploads with background sync.",
+    "icons": [
+        {
+            "src": "assets/icon.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        }
+    ]
+}

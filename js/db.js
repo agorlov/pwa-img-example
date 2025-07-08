@@ -1,0 +1,79 @@
+// js/db.js
+
+const DB_NAME = 'pwa-upload-db';
+const STORE_NAME = 'upload-requests';
+const DB_VERSION = 1;
+
+let db;
+
+function openDB() {
+    return new Promise((resolve, reject) => {
+        if (db) {
+            return resolve(db);
+        }
+
+        const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+        request.onerror = (event) => {
+            console.error('Database error:', event.target.error);
+            reject('Database error');
+        };
+
+        request.onupgradeneeded = (event) => {
+            const dbInstance = event.target.result;
+            if (!dbInstance.objectStoreNames.contains(STORE_NAME)) {
+                dbInstance.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+            }
+        };
+
+        request.onsuccess = (event) => {
+            db = event.target.result;
+            resolve(db);
+        };
+    });
+}
+
+async function saveRequest(data) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction([STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.add(data);
+
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = (event) => {
+            console.error('Error saving request:', event.target.error);
+            reject('Failed to save request');
+        };
+    });
+}
+
+async function getRequests() {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction([STORE_NAME], 'readonly');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.getAll();
+
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = (event) => {
+            console.error('Error getting requests:', event.target.error);
+            reject('Failed to get requests');
+        };
+    });
+}
+
+async function deleteRequest(id) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction([STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        const request = store.delete(id);
+
+        request.onsuccess = () => resolve();
+        request.onerror = (event) => {
+            console.error('Error deleting request:', event.target.error);
+            reject('Failed to delete request');
+        };
+    });
+}
