@@ -19,13 +19,18 @@ document.addEventListener('DOMContentLoaded', () => {
         navigator.serviceWorker.register('/service-worker.js')
             .then(registration => {
                 console.log('Service Worker registered:', registration);
-                // Слушаем сообщения от SW (например, об успешной синхронизации)
+                // Слушаем сообщения от SW
                 navigator.serviceWorker.addEventListener('message', event => {
-                    if (event.data.type === 'SYNC_COMPLETE') {
+                    const data = event.data;
+                    if (data.type === 'SYNC_COMPLETE') {
                         console.log('UI: Received sync complete message. Refreshing lists.');
                         uploadStatus.textContent = 'Файлы из очереди были успешно синхронизированы.';
                         renderQueuedFiles();
                         fetchServerFiles();
+                    } else if (data.type === 'SYNC_ERROR_UPDATE') {
+                        console.log(`UI: Received sync error update for file id ${data.id}.`);
+                        // Просто перерисовываем всю очередь, чтобы отобразить новые данные
+                        renderQueuedFiles();
                     }
                 });
             })
@@ -127,6 +132,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
             requests.forEach(request => {
                 const li = document.createElement('li');
+                li.dataset.id = request.id;
+
                 const span = document.createElement('span');
                 span.textContent = request.filename;
                 li.appendChild(span);
@@ -136,12 +143,31 @@ document.addEventListener('DOMContentLoaded', () => {
                     const img = document.createElement('img');
                     img.src = URL.createObjectURL(request.file);
                     img.className = 'preview-image';
-                    img.onload = () => {
-                        // Освобождаем память после загрузки изображения
-                        URL.revokeObjectURL(img.src);
-                    };
+                    img.onload = () => URL.revokeObjectURL(img.src);
                     li.appendChild(img);
                 }
+
+                // Если есть информация об ошибке, отображаем ее
+                if (request.error) {
+                    const errorContainer = document.createElement('div');
+                    errorContainer.className = 'error-container';
+
+                    const errorSpan = document.createElement('span');
+                    errorSpan.className = 'error-message';
+                    errorSpan.textContent = `Ошибка: ${request.error}`;
+                    errorContainer.appendChild(errorSpan);
+
+                    if (request.lastAttempt) {
+                        const timeSpan = document.createElement('span');
+                        timeSpan.className = 'attempt-time';
+                        // Форматируем дату для лучшей читаемости
+                        const d = new Date(request.lastAttempt);
+                        timeSpan.textContent = `(попытка в ${d.toLocaleTimeString()})`;
+                        errorContainer.appendChild(timeSpan);
+                    }
+                    li.appendChild(errorContainer);
+                }
+
                 queuedFileList.appendChild(li);
             });
         } catch (error) {
@@ -169,7 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     serverFileList.appendChild(li);
                 });
             }
-        } catch (error).
+        } catch (error) {
             console.error('Could not fetch file list:', error);
             serverFileList.innerHTML = '<li>Не удалось загрузить список файлов.</li>';
         }

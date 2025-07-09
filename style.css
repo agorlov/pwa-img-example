@@ -130,3 +130,19 @@ button:hover {
     object-fit: cover;
     align-self: flex-start;
 }
+
+.error-message {
+    color: #d9534f; /* Bootstrap's 'danger' color */
+    font-size: 0.9em;
+    font-style: italic;
+}
+
+.attempt-time {
+    color: #777;
+    font-size: 0.8em;
+    margin-left: 8px;
+}
+
+.error-container {
+    margin-top: 0.5rem;
+}

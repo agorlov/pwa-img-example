@@ -104,6 +104,15 @@ async function sendQueuedRequests() {
         }
 
         console.log(`Found ${requests.length} requests to send.`);
+        let hasSuccessfulUploads = false;
+
+        // Helper function to send messages to all clients
+        const postMessageToClients = async (message) => {
+            const clients = await self.clients.matchAll({ includeUncontrolled: true, type: 'window' });
+            clients.forEach(client => {
+                client.postMessage(message);
+            });
+        };
 
         for (const request of requests) {
             const { id, file, filename } = request;
@@ -113,27 +122,48 @@ async function sendQueuedRequests() {
 
             console.log(`Attempting to send file: ${filename}`);
 
-            const response = await fetch('/api/upload.php', {
-                method: 'POST',
-                body: formData,
-            });
+            try {
+                const response = await fetch('/api/upload.php', {
+                    method: 'POST',
+                    body: formData,
+                });
 
-            if (response.ok) {
-                console.log(`File ${filename} sent successfully.`);
-                await deleteRequest(id);
-                console.log(`Request ${id} deleted from queue.`);
-            } else {
-                console.error(`Failed to send ${filename}. Server responded with:`, response.status);
+                if (response.ok) {
+                    console.log(`File ${filename} sent successfully.`);
+                    await deleteRequest(id);
+                    console.log(`Request ${id} deleted from queue.`);
+                    hasSuccessfulUploads = true;
+                } else {
+                    const errorData = await response.json().catch(() => ({ error: 'Unknown server error' }));
+                    const errorMessage = errorData.error || `Server responded with status ${response.status}`;
+                    const lastAttempt = new Date();
+                    console.error(`Failed to send ${filename}. Reason: ${errorMessage}`);
+                    
+                    // Обновляем запись в БД с информацией об ошибке
+                    await updateRequestError(id, errorMessage, lastAttempt);
+                    
+                    // Отправляем сообщение об ошибке для немедленного обновления UI
+                    await postMessageToClients({ 
+                        type: 'SYNC_ERROR_UPDATE', 
+                        id: id, 
+                        error: errorMessage,
+                        lastAttempt: lastAttempt.toISOString() 
+                    });
+                }
+            } catch (error) {
+                // Это ошибка сети, а не сервера. Просто логируем, браузер попробует снова.
+                console.error(`Network error while trying to send ${filename}:`, error);
+                // Мы не отправляем сообщение клиенту здесь, т.к. это не "фатальная" ошибка,
+                // а временная проблема с сетью, которую sync manager обработает сам.
             }
         }
         
         console.log('Finished processing sync queue.');
 
-        // Отправляем сообщение всем клиентам (открытым вкладкам)
-        const clients = await self.clients.matchAll({ includeUncontrolled: true, type: 'window' });
-        clients.forEach(client => {
-            client.postMessage({ type: 'SYNC_COMPLETE' });
-        });
+        // Если была х��тя бы одна успешная загрузка, уведомляем UI для обновления
+        if (hasSuccessfulUploads) {
+            await postMessageToClients({ type: 'SYNC_COMPLETE' });
+        }
 
     } catch (error) {
         console.error('Error during sync process:', error);

@@ -101,3 +101,34 @@ async function deleteRequest(id) {
         };
     });
 }
+
+/**
+ * Обновляет запись в хранилище, добавляя информацию об ошибке.
+ * @param {number} id - ID записи для обновления.
+ * @param {string} errorMessage - Сообщение об ошибке.
+ * @param {Date} timestamp - Время попытки отправки.
+ * @returns {Promise<void>}
+ */
+async function updateRequestError(id, errorMessage, timestamp) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const transaction = db.transaction([STORE_NAME], 'readwrite');
+        const store = transaction.objectStore(STORE_NAME);
+        const getRequest = store.get(id);
+
+        getRequest.onerror = (event) => reject('Failed to get request to update');
+
+        getRequest.onsuccess = () => {
+            const requestData = getRequest.result;
+            if (requestData) {
+                requestData.lastAttempt = timestamp;
+                requestData.error = errorMessage;
+                const updateRequest = store.put(requestData);
+                updateRequest.onsuccess = () => resolve();
+                updateRequest.onerror = (event) => reject('Failed to update request');
+            } else {
+                reject('Request not found');
+            }
+        };
+    });
+}

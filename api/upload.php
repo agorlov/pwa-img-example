@@ -37,7 +37,7 @@ if (isset($_FILES['file'])) {
     // Проверяем на наличие ошибок при загрузке
     if ($file['error'] !== UPLOAD_ERR_OK) {
         http_response_code(400); // 400 Bad Request
-        echo json_encode(['error' => 'File upload error: ' . $file['error']]);
+        echo json_encode(['error' => getUploadErrorMessage($file['error'])]);
         exit;
     }
 
@@ -47,7 +47,7 @@ if (isset($_FILES['file'])) {
 
     // Дополнительная проверка безопасности: убеждаемся, что имя файла не содержит
     // символов, которые могли бы позволить выйти за пределы целевой директории.
-    if (strpos($fileName, '..') !== false || strpos($fileName, '/') !== false || strpos($fileName, '\') !== false) {
+    if (strpos($fileName, '..') !== false || strpos($fileName, '/') !== false || strpos($fileName, '\'') !== false) {
          http_response_code(400);
          echo json_encode(['error' => 'Invalid file name.']);
          exit;
@@ -64,4 +64,30 @@ if (isset($_FILES['file'])) {
 } else {
     http_response_code(400);
     echo json_encode(['error' => 'No file provided in the request.']);
+}
+
+/**
+ * Преобразует код ошибки загрузки файла PHP в человекочитаемое сообщение.
+ * @param int $errorCode Код ошибки из $_FILES['file']['error'].
+ * @return string Понятное сообщение об ошибке.
+ */
+function getUploadErrorMessage($errorCode) {
+    switch ($errorCode) {
+        case UPLOAD_ERR_INI_SIZE:
+            return 'Размер файла превышает лимит, установленный на сервере.';
+        case UPLOAD_ERR_FORM_SIZE:
+            return 'Размер файла превышает лимит, указанный в HTML-форме.';
+        case UPLOAD_ERR_PARTIAL:
+            return 'Файл был загружен только частично.';
+        case UPLOAD_ERR_NO_FILE:
+            return 'Файл не был загружен.';
+        case UPLOAD_ERR_NO_TMP_DIR:
+            return 'Отсутствует временная папка для загрузки.';
+        case UPLOAD_ERR_CANT_WRITE:
+            return 'Не удалось записать файл на диск.';
+        case UPLOAD_ERR_EXTENSION:
+            return 'PHP-расширение остановило загрузку файла.';
+        default:
+            return 'Произошла неизвестная ошибка при загрузке.';
+    }
 }
